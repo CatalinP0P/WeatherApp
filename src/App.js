@@ -19,11 +19,19 @@ import sunrise from "./Assets/sunrise.svg";
 function App() {
     const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Thursday", "Wednesday", "Friday", "Saturday"]
     const textBoxText = useRef();
-
+    
+    const [tempMeasurement, setTempMeasurement] = useState("C");
     const [location, setLocation] = useState();
     const [currentWeather, setCurrentWeather] = useState();
     const [dailyWeather, setDailyWeather] = useState();
     const [todayWeather, setTodayWeather] = useState();
+    const [tab, setTab] = useState(1);
+
+    useEffect(() =>
+    {
+      if ( location != null )
+        getWeather(location.name);
+    }, [tempMeasurement])
 
     const getTime = (date) =>
     {
@@ -149,6 +157,12 @@ function App() {
       }
     }
 
+    const celsiusToFahrenheit = (celsius) => 
+    {
+      var fahrenheit = (celsius * 9/5) + 32;
+      return fahrenheit;
+    }
+
     return (
       <div className='container'>
         <div className='card row' >
@@ -175,7 +189,7 @@ function App() {
             <h2> {location?.name}, <span className='color-muted' >{location?.admin1}</span> </h2>
 
             <img src={getImageFromWeatherCode(currentWeather?.weathercode)} id='realTimeStatus' ></img>
-            <label id='realTimeTemp' >{parseInt(currentWeather?.temperature)} <span>°C</span></label>
+            <label id='realTimeTemp' >{tempMeasurement === "C" ? parseInt(currentWeather?.temperature) : parseInt(celsiusToFahrenheit(parseInt(currentWeather?.temperature)))} <span>°{tempMeasurement === "C" ? "C" : "F"}</span></label>
             <label id='time' > <span>{daysOfWeek[new Date().getDay()]}</span>, {getTime(new Date())} </label>
 
             <label className='info' > {getWeatherCodeMeaning(currentWeather?.weathercode)} </label>
@@ -186,13 +200,27 @@ function App() {
           <div className='cardRight bg-muted' >
             <div className='header'>
               <div className='headerItem' >
-                <label className='color-muted' > Today </label>
-                <label className='selected' > Week </label>
+                <label className={tab === 0 ? "selected" : "color-muted"}
+                onClick={() =>
+                {
+                  setTab(0);
+                }}
+                > Today </label>
+                <label className={tab === 1 ? "selected" : "color-muted"}
+                onClick={() =>
+                {
+                  setTab(1);
+                }}
+                > Week </label>
               </div>
 
               <div className='headerItem' >
-                <button className='selected' >°C</button>
-                <button>°F</button>
+                <button className={tempMeasurement === "C" ? "selected" : ""} 
+                onClick={() => setTempMeasurement("C")}
+                >°C</button>
+                <button className={tempMeasurement === "F" ? "selected" : ""}
+                onClick={() => setTempMeasurement("F")}
+                >°F</button>
               </div>
             </div>
 
@@ -204,7 +232,7 @@ function App() {
                   <div className='infoCard' key={daily.time} >
                     <label> {daysOfWeek[new Date(daily.time).getDay()].substring(0,3)} </label>
                     <img src={getImageFromWeatherCode(daily.weathercode)} ></img>
-                    <label> {parseInt(daily.temperature_2m_max)}°C <span className='color-muted' > {parseInt(daily.temperature_2m_min)}°C </span> </label>
+                    <label> {tempMeasurement === "C" ? parseInt(daily.temperature_2m_max) : parseInt(celsiusToFahrenheit(parseInt(daily.temperature_2m_max)))}°{tempMeasurement} <span className='color-muted' > {tempMeasurement === "C" ? parseInt(daily.temperature_2m_min) : parseInt(celsiusToFahrenheit(parseInt(daily.temperature_2m_min)))}°{tempMeasurement} </span> </label>
                   </div>
                 )  
               })}
