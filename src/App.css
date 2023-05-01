@@ -376,3 +376,24 @@ h2 > span
     height: 20px;
     margin-right: 8px;
 }
+
+.hidden
+{
+    display: none;
+}
+
+.scrollX
+{
+    overflow-x: scroll;
+    cursor: grab;
+}
+
+.scrollX::-webkit-scrollbar
+{
+    display: none;
+}
+
+.wrap
+{
+    flex-wrap: wrap;
+}

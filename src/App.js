@@ -12,9 +12,11 @@ import Snow from "./Assets/Snow.png";
 import Thunder from "./Assets/Thunder.png";
 import Rain1 from "./Assets/Rain1.png";
 import Rain2 from "./Assets/Rain2.png";
+import Night from "./Assets/Night.png";
 
 import sunset from "./Assets/sunset.svg"
 import sunrise from "./Assets/sunrise.svg";
+import { keyboardImplementationWrapper } from '@testing-library/user-event/dist/keyboard';
 
 function App() {
     const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Thursday", "Wednesday", "Friday", "Saturday"]
@@ -24,6 +26,7 @@ function App() {
     const [location, setLocation] = useState();
     const [currentWeather, setCurrentWeather] = useState();
     const [dailyWeather, setDailyWeather] = useState();
+    const [hourlyWeather, setHourlyWeather] = useState();
     const [todayWeather, setTodayWeather] = useState();
     const [tab, setTab] = useState(1);
 
@@ -103,15 +106,30 @@ function App() {
     {
       const {admin1, country_code ,name, latitude, longitude, timezone } = await getLatitudeAndLongitude(location);
       
-      var response = await Axios.get(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&timezone=${timezone}&daily=temperature_2m_max&daily=temperature_2m_min&daily=weathercode&current_weather=true&daily=windspeed_10m_max&daily=winddirection_10m_dominant&daily=sunset&daily=sunrise&daily=precipitation_probability_max&daily=uv_index_max&hourly=visibility&hourly=relativehumidity_2m&hourly=windspeed_10m&hourly=winddirection_10m&hourly=visibility&hourly=precipitation_probability&daily=rain_sum`);
-
+      var response = await Axios.get(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&timezone=${timezone}&daily=temperature_2m_max&daily=temperature_2m_min&daily=weathercode&current_weather=true&daily=windspeed_10m_max&daily=winddirection_10m_dominant&daily=sunset&daily=sunrise&daily=precipitation_probability_max&daily=uv_index_max&hourly=visibility&hourly=relativehumidity_2m&hourly=windspeed_10m&hourly=winddirection_10m&hourly=visibility&hourly=precipitation_probability&daily=rain_sum&hourly=weathercode&hourly=is_day&hourly=temperature_2m`);
+      console.log(response.data.current_weather)
       setCurrentWeather(response.data.current_weather);
+
+      var hourlyWeather = [];
+      for ( var i=1; i<=24; i++ )
+      {
+        var is_day = response.data.hourly.is_day[i];
+        var weathercode = response.data.hourly.weathercode[i];
+        var temperature_2m = response.data.hourly.temperature_2m[i];
+        var time = response.data.hourly.time[i];
+
+        hourlyWeather.push({is_day: is_day, weathercode: weathercode, temperature_2m: temperature_2m, time: time});
+      }
+      setHourlyWeather(hourlyWeather);
+
       var weather = [];
       for ( var i=0; i<response.data.daily.time.length; i++ )
       {
         weather.push({temperature_2m_max: response.data.daily.temperature_2m_max[i], temperature_2m_min: response.data.daily.temperature_2m_min[i], time: response.data.daily.time[i], weathercode: response.data.daily.weathercode[i]});
       }
       setDailyWeather(weather);
+
+
       let weatherToday = {
         uv_index_max: response.data.daily.uv_index_max[0],
         windspeed_10m: response.data.daily.windspeed_10m_max[0],
@@ -188,7 +206,7 @@ function App() {
 
             <h2> {location?.name}, <span className='color-muted' >{location?.admin1}</span> </h2>
 
-            <img src={getImageFromWeatherCode(currentWeather?.weathercode)} id='realTimeStatus' ></img>
+            <img src={ currentWeather?.is_day == 0 && currentWeather?.weathercode < 5 ? Night : getImageFromWeatherCode(currentWeather?.weathercode)} id='realTimeStatus' ></img>
             <label id='realTimeTemp' >{tempMeasurement === "C" ? parseInt(currentWeather?.temperature) : parseInt(celsiusToFahrenheit(parseInt(currentWeather?.temperature)))} <span>°{tempMeasurement === "C" ? "C" : "F"}</span></label>
             <label id='time' > <span>{daysOfWeek[new Date().getDay()]}</span>, {getTime(new Date())} </label>
 
@@ -224,8 +242,20 @@ function App() {
               </div>
             </div>
 
+            <div className={tab == 0 ? "row mt-3 scrollX" : "hidden"} > 
+              {hourlyWeather?.map((hourly) =>
+              {
+                return (
+                  <div className='infoCard' key={hourly.time} >
+                    <label>{getTime(new Date(hourly.time))}</label>
+                    <img src={hourly.is_day == 0 && hourly.weathercode < 5 ? Night : getImageFromWeatherCode(hourly.weathercode)} ></img>
+                    <label> {tempMeasurement === "C" ? hourly.temperature_2m : parseInt(celsiusToFahrenheit(hourly.temperature_2m))} °{tempMeasurement} </label>
+                  </div>
+                ) 
+              })}
+            </div>
 
-            <div className='row mt-3' >
+            <div className={tab == 1 ? "row mt-3" : "hidden"} >
               {dailyWeather?.map( daily =>
               {
                 return (
@@ -236,8 +266,8 @@ function App() {
                   </div>
                 )  
               })}
-
             </div>
+
               
 
             <h3 className='mt-3' > Today's Highlights </h3>
