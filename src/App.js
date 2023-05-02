@@ -3,6 +3,7 @@ import Axios from 'axios';
 import {useState, useEffect, useRef} from 'react';
 import search from "./Assets/search.svg";
 import rainSVG from "./Assets/rain.svg";
+import loading from "./Assets/loading.gif";
 
 import Sunny from "./Assets/Sunny.png";
 import PartialSunny from "./Assets/Partial Sunny.png";
@@ -132,7 +133,7 @@ function App() {
           setTimeout(() =>
           {
             setLoaded(true);
-          }, 1000);
+          }, 125);
         })
       }
     }, [])
@@ -220,143 +221,149 @@ function App() {
     }
 
     return (
-      <div className={loaded ? "container" : "container hidden"}>
-        <div className='card row' >
-          <div className='cardLeft bg-light' >
-            <div className='textBox' >
-              <img src={search}
-              onClick={() => {
-                getWeather(textBoxText.current.value);
-                textBoxText.current.value = "";
-              }} ></img>
-              <input placeholder='Search for a places..' 
-              ref={textBoxText}
-              onKeyDown={e =>
-                {
-                  if ( e.code == "Enter" )
+      <>
+        <div className={loaded ? "overlay hidden" : "overlay"}> 
+          <h1> Weather App  </h1>
+          <img src={loading} ></img>
+        </div>
+        <div className={loaded ? "container" : "container hidden"}>
+          <div className='card row' >
+            <div className='cardLeft bg-light' >
+              <div className='textBox' >
+                <img src={search}
+                onClick={() => {
+                  getWeather(textBoxText.current.value);
+                  textBoxText.current.value = "";
+                }} ></img>
+                <input placeholder='Search for a places..' 
+                ref={textBoxText}
+                onKeyDown={e =>
                   {
-                    getWeather(e.target.value);
-                    e.target.value = "";
-                  }
-                  
-                }} ></input>
-            </div>
-
-            <h2> {location?.name}, <span className='color-muted' >{location?.admin1}</span> </h2>
-
-            <img src={ currentWeather?.is_day == 0 && currentWeather?.weathercode < 5 ? Night : getImageFromWeatherCode(currentWeather?.weathercode)} id='realTimeStatus' ></img>
-            <label id='realTimeTemp' >{tempMeasurement === "C" ? parseInt(currentWeather?.temperature) : parseInt(celsiusToFahrenheit(parseInt(currentWeather?.temperature)))} <span>°{tempMeasurement === "C" ? "C" : "F"}</span></label>
-            <label id='time' > <span>{daysOfWeek[new Date().getDay()]}</span>, {getTime(new Date())} </label>
-
-            <label className='info' > {getWeatherCodeMeaning(currentWeather?.weathercode)} </label>
-            <label className='info' > <img className='icon' src={rainSVG} ></img> {todayWeather?.precipitation_probability}% </label>
-
-          </div>
-
-          <div className='cardRight bg-muted' >
-            <div className='header'>
-              <div className='headerItem' >
-                <label className={tab === 0 ? "selected" : "color-muted"}
-                onClick={() =>
-                {
-                  setTab(0);
-                }}
-                > Today </label>
-                <label className={tab === 1 ? "selected" : "color-muted"}
-                onClick={() =>
-                {
-                  setTab(1);
-                }}
-                > Week </label>
+                    if ( e.code == "Enter" )
+                    {
+                      getWeather(e.target.value);
+                      e.target.value = "";
+                    }
+                    
+                  }} ></input>
               </div>
 
-              <div className='headerItem' >
-                <button className={tempMeasurement === "C" ? "selected" : ""} 
-                onClick={() => setTempMeasurement("C")}
-                >°C</button>
-                <button className={tempMeasurement === "F" ? "selected" : ""}
-                onClick={() => setTempMeasurement("F")}
-                >°F</button>
-              </div>
+              <h2> {location?.name}, <span className='color-muted' >{location?.admin1}</span> </h2>
+
+              <img src={ currentWeather?.is_day == 0 && currentWeather?.weathercode < 5 ? Night : getImageFromWeatherCode(currentWeather?.weathercode)} id='realTimeStatus' ></img>
+              <label id='realTimeTemp' >{tempMeasurement === "C" ? parseInt(currentWeather?.temperature) : parseInt(celsiusToFahrenheit(parseInt(currentWeather?.temperature)))} <span>°{tempMeasurement === "C" ? "C" : "F"}</span></label>
+              <label id='time' > <span>{daysOfWeek[new Date().getDay()]}</span>, {getTime(new Date())} </label>
+
+              <label className='info' > {getWeatherCodeMeaning(currentWeather?.weathercode)} </label>
+              <label className='info' > <img className='icon' src={rainSVG} ></img> {todayWeather?.precipitation_probability}% </label>
+
             </div>
 
-            <div className={tab == 0 ? "row mt-3 scrollX" : "hidden"} > 
-              {hourlyWeather?.map((hourly) =>
-              {
-                return (
-                  <div className='infoCard' key={hourly.time} >
-                    <label>{getTime(new Date(hourly.time))}</label>
-                    <img src={hourly.is_day == 0 && hourly.weathercode < 5 ? Night : getImageFromWeatherCode(hourly.weathercode)} ></img>
-                    <label> {tempMeasurement === "C" ? hourly.temperature_2m : parseInt(celsiusToFahrenheit(hourly.temperature_2m))} °{tempMeasurement} </label>
-                  </div>
-                ) 
-              })}
-            </div>
-
-            <div className={tab == 1 ? "row mt-3" : "hidden"} >
-              {dailyWeather?.map( daily =>
-              {
-                return (
-                  <div className='infoCard' key={daily.time} >
-                    <label> {daysOfWeek[new Date(daily.time).getDay()].substring(0,3)} </label>
-                    <img src={getImageFromWeatherCode(daily.weathercode)} ></img>
-                    <label> {tempMeasurement === "C" ? parseInt(daily.temperature_2m_max) : parseInt(celsiusToFahrenheit(parseInt(daily.temperature_2m_max)))}°{tempMeasurement} <span className='color-muted' > {tempMeasurement === "C" ? parseInt(daily.temperature_2m_min) : parseInt(celsiusToFahrenheit(parseInt(daily.temperature_2m_min)))}°{tempMeasurement} </span> </label>
-                  </div>
-                )  
-              })}
-            </div>
-
-              
-
-            <h3 className='mt-3' > Today's Highlights </h3>
-            <div className='row g-1 stretch' >
-              <div className='infoCard bigImage' > 
-                <h4 className='color-muted' > UV Index </h4>
-                <h1 className='mt-4' style={{margin: "50px 10px"}} > {todayWeather?.uv_index_max} </h1>
-              </div>
-
-              <div className='infoCard bigImage' > 
-                <h4 className='color-muted' > Wind Speed </h4>
-                <h1> {todayWeather?.windspeed_10m} <span>km/h</span></h1>
-                <p className='condition' > {degreesToDirection(todayWeather?.winddirection_10m)}° </p>
-              </div>
-
-              <div className='infoCard bigImage' > 
-                <h4 className='color-muted' > Sunrise & Sunset</h4>
-                <div className='sunInfo mt-3' >
-                  <img src={sunrise} ></img>
-                  <label> {todayWeather?.sunrise} </label>
+            <div className='cardRight bg-muted' >
+              <div className='header'>
+                <div className='headerItem' >
+                  <label className={tab === 0 ? "selected" : "color-muted"}
+                  onClick={() =>
+                  {
+                    setTab(0);
+                  }}
+                  > Today </label>
+                  <label className={tab === 1 ? "selected" : "color-muted"}
+                  onClick={() =>
+                  {
+                    setTab(1);
+                  }}
+                  > Week </label>
                 </div>
-                <div className='sunInfo' >
-                  <img src={sunset} ></img>
-                  <label> {todayWeather?.sunset} </label>
+
+                <div className='headerItem' >
+                  <button className={tempMeasurement === "C" ? "selected" : ""} 
+                  onClick={() => setTempMeasurement("C")}
+                  >°C</button>
+                  <button className={tempMeasurement === "F" ? "selected" : ""}
+                  onClick={() => setTempMeasurement("F")}
+                  >°F</button>
                 </div>
               </div>
+
+              <div className={tab == 0 ? "row mt-3 scrollX" : "hidden"} > 
+                {hourlyWeather?.map((hourly) =>
+                {
+                  return (
+                    <div className='infoCard' key={hourly.time} >
+                      <label>{getTime(new Date(hourly.time))}</label>
+                      <img src={hourly.is_day == 0 && hourly.weathercode < 5 ? Night : getImageFromWeatherCode(hourly.weathercode)} ></img>
+                      <label> {tempMeasurement === "C" ? hourly.temperature_2m : parseInt(celsiusToFahrenheit(hourly.temperature_2m))} °{tempMeasurement} </label>
+                    </div>
+                  ) 
+                })}
+              </div>
+
+              <div className={tab == 1 ? "row mt-3" : "hidden"} >
+                {dailyWeather?.map( daily =>
+                {
+                  return (
+                    <div className='infoCard' key={daily.time} >
+                      <label> {daysOfWeek[new Date(daily.time).getDay()].substring(0,3)} </label>
+                      <img src={getImageFromWeatherCode(daily.weathercode)} ></img>
+                      <label> {tempMeasurement === "C" ? parseInt(daily.temperature_2m_max) : parseInt(celsiusToFahrenheit(parseInt(daily.temperature_2m_max)))}°{tempMeasurement} <span className='color-muted' > {tempMeasurement === "C" ? parseInt(daily.temperature_2m_min) : parseInt(celsiusToFahrenheit(parseInt(daily.temperature_2m_min)))}°{tempMeasurement} </span> </label>
+                    </div>
+                  )  
+                })}
+              </div>
+
+                
+
+              <h3 className='mt-3' > Today's Highlights </h3>
+              <div className='row g-1 stretch' >
+                <div className='infoCard bigImage' > 
+                  <h4 className='color-muted' > UV Index </h4>
+                  <h1 className='mt-4' style={{margin: "50px 10px"}} > {todayWeather?.uv_index_max} </h1>
+                </div>
+
+                <div className='infoCard bigImage' > 
+                  <h4 className='color-muted' > Wind Speed </h4>
+                  <h1> {todayWeather?.windspeed_10m} <span>km/h</span></h1>
+                  <p className='condition' > {degreesToDirection(todayWeather?.winddirection_10m)}° </p>
+                </div>
+
+                <div className='infoCard bigImage' > 
+                  <h4 className='color-muted' > Sunrise & Sunset</h4>
+                  <div className='sunInfo mt-3' >
+                    <img src={sunrise} ></img>
+                    <label> {todayWeather?.sunrise} </label>
+                  </div>
+                  <div className='sunInfo' >
+                    <img src={sunset} ></img>
+                    <label> {todayWeather?.sunset} </label>
+                  </div>
+                </div>
+              </div>
+
+              <div className='row g-1 stretch mt-2' >
+                <div className='infoCard bigImage' > 
+                  <h4 className='color-muted' > Humidity </h4>
+                  <h1> {todayWeather?.relativehumidity_2m} <span className='degrees' >%</span> </h1>
+                  <p  className='condition' > Normal </p>
+                </div>
+
+                <div className='infoCard bigImage' > 
+                  <h4 className='color-muted' > Visibility </h4>
+                  <h1> {todayWeather?.visibility} <span className='degrees' >km</span> </h1>
+                  <p  className='condition' > Average </p>
+                </div>
+
+                <div className='infoCard bigImage' > 
+                  <h4 className='color-muted' > Rain Sum </h4>
+                  <h1> {todayWeather?.rain_sum} </h1>
+                  <p  className='condition' > Unhealty </p>
+                </div>
+              </div>
+
             </div>
-
-            <div className='row g-1 stretch mt-2' >
-              <div className='infoCard bigImage' > 
-                <h4 className='color-muted' > Humidity </h4>
-                <h1> {todayWeather?.relativehumidity_2m} <span className='degrees' >%</span> </h1>
-                <p  className='condition' > Normal </p>
-              </div>
-
-              <div className='infoCard bigImage' > 
-                <h4 className='color-muted' > Visibility </h4>
-                <h1> {todayWeather?.visibility} <span className='degrees' >km</span> </h1>
-                <p  className='condition' > Average </p>
-              </div>
-
-              <div className='infoCard bigImage' > 
-                <h4 className='color-muted' > Rain Sum </h4>
-                <h1> {todayWeather?.rain_sum} </h1>
-                <p  className='condition' > Unhealty </p>
-              </div>
-            </div>
-
           </div>
         </div>
-      </div>
+      </>
     );
 }
 
