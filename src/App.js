@@ -30,6 +30,8 @@ function App() {
     const [todayWeather, setTodayWeather] = useState();
     const [tab, setTab] = useState(1);
 
+    const [loaded, setLoaded] = useState(false);
+
     useEffect(() =>
     {
       if ( location != null )
@@ -102,12 +104,42 @@ function App() {
         return Thunder;
     }
 
-    const getWeather = async (location) =>
+    useEffect(() =>
+    { 
+      var tz = Intl.DateTimeFormat().resolvedOptions()
+      var timeZone = tz.timeZone;
+
+      var latitude;
+      var longitude;
+
+      if ( navigator.geolocation)
+      {
+        navigator.geolocation.getCurrentPosition( coordinates =>
+        {
+          latitude = coordinates.coords.latitude;
+          longitude = coordinates.coords.longitude;
+
+          setTimeout(() =>
+          {
+            getWeatherWithCoords(latitude, longitude, timeZone);
+          }, 1)
+
+          var location = {
+            name: "Your Location"
+          };
+          setLocation(location);
+
+          setTimeout(() =>
+          {
+            setLoaded(true);
+          }, 1000);
+        })
+      }
+    }, [])
+
+    const getWeatherWithCoords = async (latitude, longitude, timezone) =>
     {
-      const {admin1, country_code ,name, latitude, longitude, timezone } = await getLatitudeAndLongitude(location);
-      
       var response = await Axios.get(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&timezone=${timezone}&daily=temperature_2m_max&daily=temperature_2m_min&daily=weathercode&current_weather=true&daily=windspeed_10m_max&daily=winddirection_10m_dominant&daily=sunset&daily=sunrise&daily=precipitation_probability_max&daily=uv_index_max&hourly=visibility&hourly=relativehumidity_2m&hourly=windspeed_10m&hourly=winddirection_10m&hourly=visibility&hourly=precipitation_probability&daily=rain_sum&hourly=weathercode&hourly=is_day&hourly=temperature_2m`);
-      console.log(response.data.current_weather)
       setCurrentWeather(response.data.current_weather);
 
       var hourlyWeather = [];
@@ -157,6 +189,12 @@ function App() {
       setTodayWeather(weatherToday);
     }
 
+    const getWeather = async (location) =>
+    {
+      const {latitude, longitude, timezone } = await getLatitudeAndLongitude(location);
+      getWeatherWithCoords(latitude, longitude, timezone);
+    }
+
     const getLatitudeAndLongitude = async (location) =>
     {
       var response = await Axios.get("https://geocoding-api.open-meteo.com/v1/search?name=" + location)
@@ -182,7 +220,7 @@ function App() {
     }
 
     return (
-      <div className='container'>
+      <div className={loaded ? "container" : "container hidden"}>
         <div className='card row' >
           <div className='cardLeft bg-light' >
             <div className='textBox' >
